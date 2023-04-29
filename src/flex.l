@@ -1,9 +1,8 @@
+%option noyywrap nodefault yylineno
+
 %{
    #include "bison.tab.h"
-/* #include <string>
-#include <tuple>
-#include <math.h>
-int numLines = 0, numChars = 0, numTokens = 0; */
+   
 %}
 
 %%
