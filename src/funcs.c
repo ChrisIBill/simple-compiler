@@ -2,25 +2,30 @@
 #include "parser.h"
 
 
-struct symbol* symbolTable = NULL;
+struct symbol* symbolTable = (symbol*)NULL;
 
-void yyerror(char* s) {
-    printf("Error: %s\n", s);
+void yyerror( const char* const s ) {
+    fprintf (stderr, "%s\n", s);
 }
 
 struct symbol* lookUp(char* s) {
     struct symbol* sym;
+    if (symbolTable == NULL) {
+        printf("Error: Symbol table is empty\n");
+        return NULL;
+    }
     HASH_FIND_STR(symbolTable, s, sym);
     return sym;
 }
 
-struct symbol* insert(char* s) {
+struct symbol* insert(char* st) {
     struct symbol* sym;
-    HASH_FIND_STR(symbolTable, s, sym);
+    sym = lookUp(st);
     if (sym == NULL) {
         sym = (struct symbol*)malloc(sizeof(symbol));
-        strcpy(sym->name, s);
-        HASH_ADD_KEYPTR(hh, symbolTable, s, strlen(sym->name), sym);
+        // Bug Here ???
+        sym->name = strdup(st);
+        HASH_ADD_KEYPTR(hh, symbolTable, st, strlen(sym->name), sym);
         return sym;
     }
     else {
@@ -29,6 +34,7 @@ struct symbol* insert(char* s) {
 }
 
 void handleDeclarations(declarationsNode* node) {
+    printf("Handling declarations\n");
     while (node != NULL) {
         switch (node->type) {
         case factorTypeInt:

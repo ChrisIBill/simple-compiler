@@ -1,8 +1,9 @@
+%error-verbose
 %{
 #include <stdio.h>
 #include <string.h>
 #include "parser.h"
-
+#define YYDEBUG 1
 extern int yylex();
 
 int numDeclarations = 0;
@@ -13,11 +14,15 @@ int numDeclarations = 0;
     char* sValue;
     void* node;
 }
+
+%start program
 %token <iValue> NUM_LIT
 %token <iValue> BOOL_LIT
 %token <sValue> IDENTITY
 %token LP RP ASGN SC
-%token <sValue> OP2 OP3 OP4
+%token <sValue> OP2
+%token <sValue> OP3
+%token <sValue> OP4
 %token IF THEN ELSE BEGN END WHILE DO PROGRAM VAR AS INT BOOL
 %token WRITEINT READINT
 
@@ -40,21 +45,22 @@ int numDeclarations = 0;
 program : PROGRAM declarations BEGN statementSequence END
 {
     printf("Program Valid\n");
-    handleDeclarations(( declarationsNode *) $2);
+    handleDeclarations((declarationsNode*)$2);
     handleStatementSeq((stmtSeqNode *) $4);
     printf("finished\n");
-};
-declarations: VAR IDENTITY AS type SC declarations
+}
+;
+declarations : VAR IDENTITY AS type SC declarations
 {
     printf("Declaration %s\n", $2);
     numDeclarations++;
-    declarationsNode *node;
+    declarationsNode* node;
     node = malloc(sizeof(declarationsNode));
     node->name = strdup($2);
     node->type = $4;
     node->next = $6;
-
-    symbol *sym = lookUp(node->name);
+    $$ = node;
+    symbol* sym = lookUp(node->name);
     if (sym != NULL) {
         printf("Error: Variable %s already declared\n", node->name);
         exit(1);
@@ -66,7 +72,8 @@ declarations: VAR IDENTITY AS type SC declarations
 type: INT{ $$ = factorTypeInt; } | BOOL { $$ = factorTypeBool; };
 statementSequence: statement SC statementSequence
 {
-    stmtSeqNode *node;
+    printf("Statement\n");
+    stmtSeqNode* node;
     node = malloc(sizeof(stmtSeqNode));
     node->stmt = $1;
     node->next = $3;
@@ -105,7 +112,8 @@ statement: assignment
  };
 assignment: IDENTITY ASGN expression SC 
 {
-    assignmentNode *node;
+    printf("Identity Assignment\n");
+    assignmentNode* node;
     node = malloc(sizeof(assignmentNode));
     node->name = strdup($1);
     node->expr = $3;
@@ -119,7 +127,8 @@ assignment: IDENTITY ASGN expression SC
 }
 | IDENTITY ASGN READINT SC
 {
-    assignmentNode *node;
+    printf("ReadInt Assignment\n");
+    assignmentNode* node;
     node = malloc(sizeof(assignmentNode));
     node->name = strdup($1);
     node->expr = NULL;
@@ -169,14 +178,16 @@ writeInt: WRITEINT expression SC
 };
 expression: simpleExpression 
 {
-    exprNode *node;
+    printf("Single Expression\n");
+    exprNode* node;
     node = malloc(sizeof(exprNode));
     node->simpExpr1 = (void *) $1;
     $$ = node;
 }
 | simpleExpression OP4 simpleExpression
 {
-    exprNode *node;
+    printf("Double Expression\n");
+    exprNode* node;
     node = malloc(sizeof(exprNode));
     node->simpExpr1 = (void *) $1;
     node->op = $2;
@@ -185,7 +196,8 @@ expression: simpleExpression
 };
 simpleExpression: term 
 {
-    simpExprNode *node;
+    printf("Single Term\n");
+    simpExprNode* node;
     node = malloc(sizeof(exprNode));
     node->term1 = (void *) $1;
     node->term2 = (void *) NULL;
@@ -193,7 +205,8 @@ simpleExpression: term
 }
 | term OP3 term
 {
-    simpExprNode *node;
+    printf("Double Term\n");
+    simpExprNode* node;
     node = malloc(sizeof(exprNode));
     node->term1 = (void *) $1;
     node->op = $2;
@@ -202,15 +215,17 @@ simpleExpression: term
 };
 term: factor
 {
-    termNode *node;
+    printf("Single Factor\n");
+    termNode* node;
     node = malloc(sizeof(termNode));
     node->factor1 = (void*)$1;
     node->factor2 = (void*)NULL;
     $$ = node;
 }
  | factor OP2 factor
- {
-    termNode *node;
+{
+    printf("Double Factor\n");
+    termNode* node;
     node = malloc(sizeof(termNode));
     node->factor1 = (void *) $1;
     node->op = $2;
@@ -219,6 +234,7 @@ term: factor
  };
 factor: IDENTITY 
 {
+    printf("Identity Factor\n");
     /* @TODO */
     factorNode* fn;
     valueNode* vn;
@@ -233,6 +249,7 @@ factor: IDENTITY
 }
 | NUM_LIT 
 {
+    printf("Num Factor\n");
     factorNode* fn;
     valueNode* vn;
     
@@ -246,6 +263,7 @@ factor: IDENTITY
 }
 | BOOL_LIT 
 {
+    printf("Bool Factor\n");
     factorNode* fn;
     valueNode* vn;
     

@@ -136,6 +136,7 @@ struct programNode
 };
 
 struct symbol* lookUp(char* s);
+struct symbol* insert(char* st);
 void handleDeclarations(declarationsNode* node);
 void handleStatement(stmtNode* node);
 void handleStatementSeq(stmtSeqNode* node);
