@@ -1,4 +1,22 @@
 #define MAXCHILDREN 3
+
+void yyerror(char* s);
+
+int yyparse();
+int yylex();
+
+struct symbol
+{
+    char* name;
+    int type;
+    int value;
+    int isInitialized;
+    UT_hash_handle hh;
+};
+
+struct symbol* lookUp(char* s);
+
+
 /* Enums */
 
 typedef enum
@@ -39,7 +57,7 @@ typedef enum
     typeStmtSeq
 } nodeEnum;
 /* Structs */
-typedef struct
+struct
 {
     declarationsNodeEnum type;
     char* name;
@@ -51,7 +69,7 @@ typedef struct
     } value;
 } declNodeType;
 
-typedef struct
+struct
 {
     declarationsNodeEnum type;
 
@@ -143,31 +161,40 @@ typedef struct
 
 typedef struct
 {
-    struct parseTreeNode* child[MAXCHILDREN];
-    struct parseTreeNode* sibling; /* points to next sibling of node */
-
+    declarationsNodeType* declarations;
+    stmtSeqNodeType* stmtSeq;
     NodeType nodeEnum;
-    union
-    {
-        /* Should only need these two in union, all other nodes of tree are either these, or children of these */
-        declarationsNodeType declarations;
-        stmtSeqNodeType stmtSeq;
-        /* Some of the subtypes of these nodes */
-        // declNodeType decl;
-        // typeNodeEnum type;
-        // stmtNodeType stmt;
-        // assignmentNodeType assignment;
-        // exprNodeType expr;
-        // simpExprNodeType simpExpr;
-        // termNodeType term;
-    } subtype;
+} programNodeType;
 
-    union
-    {
-        int op; /* value for type of operator */
-        int val;
-        std::string* name; /* name for identifier */
-    };
+typedef struct
+{
+
+}
+// struct parseTreeNode* child[MAXCHILDREN];
+    // struct parseTreeNode* sibling; /* points to next sibling of node */
+
+    // NodeType nodeEnum;
+    // union
+    // {
+    //     /* Should only need these two in union, all other nodes of tree are either these, or children of these */
+    //     declarationsNodeType declarations;
+    //     stmtSeqNodeType stmtSeq;
+    //     /* Some of the subtypes of these nodes */
+    //     // declNodeType decl;
+    //     // typeNodeEnum type;
+    //     // stmtNodeType stmt;
+    //     // assignmentNodeType assignment;
+    //     // exprNodeType expr;
+    //     // simpExprNodeType simpExpr;
+    //     // termNodeType term;
+    // } subtype;
+
+    // union
+    // {
+    //     int op; /* value for type of operator */
+    //     int val;
+    //     std::string* name; /* name for identifier */
+    // };
 
 } parseTreeNode;
 
