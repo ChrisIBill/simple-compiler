@@ -23,7 +23,7 @@ false|true  {yylval.iValue = strcmp(yytext, "true"); return BOOL_LIT;}
 if        {return IF;}
 then      {return THEN;}
 else      {return ELSE;}
-begin     {return BEGN;}
+begin     {printf("here");return BEGN;}
 end       {return END;}
 while     {return WHILE;}
 do        {return DO;}

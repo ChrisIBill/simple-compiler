@@ -1,12 +1,13 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include "funcs.c"
+#include "parser.h"
 
 extern int yylex();
 
 int numDeclarations = 0;
 %}
+
 %union {
     int iValue;
     char* sValue;
@@ -40,12 +41,13 @@ program : PROGRAM declarations BEGN statementSequence END
 {
     printf("Program Valid\n");
     handleDeclarations(( declarationsNode *) $2);
-    handleStatementSequence((stmtSeqNode *) $4);
+    handleStatementSeq((stmtSeqNode *) $4);
     printf("finished\n");
 };
 declarations: VAR IDENTITY AS type SC declarations
 {
-    declarations++;
+    printf("Declaration %s\n", $2);
+    numDeclarations++;
     declarationsNode *node;
     node = malloc(sizeof(declarationsNode));
     node->name = strdup($2);
@@ -57,12 +59,11 @@ declarations: VAR IDENTITY AS type SC declarations
         printf("Error: Variable %s already declared\n", node->name);
         exit(1);
     }
-    else {
-        insert(node->name, node->type);
-    }
+    sym = insert(node->name);
+    sym->type = node->type;
 }
-| /* empty */ { $$ = (declarationNode*)NULL; };
-type: INT{ $$ = typeInt; } | BOOL { $$ = typeBool; };
+| /* empty */ { $$ = (declarationsNode*)NULL; };
+type: INT{ $$ = factorTypeInt; } | BOOL { $$ = factorTypeBool; };
 statementSequence: statement SC statementSequence
 {
     stmtSeqNode *node;
@@ -115,17 +116,13 @@ assignment: IDENTITY ASGN expression SC
         printf("Error: Variable %s not declared\n", node->name);
         exit(1);
     }
-    if (sym->type != node->expr->type) {
-        printf("Error: Variable %s is of type %s, but expression is of type %s\n", node->name, sym->type == typeInt ? "int" : "bool", node->expr->type == typeInt ? "int" : "bool");
-        exit(1);
-    }
-    }
+}
 | IDENTITY ASGN READINT SC
 {
     assignmentNode *node;
     node = malloc(sizeof(assignmentNode));
     node->name = strdup($1);
-    node->expr = (expression *) NULL;
+    node->expr = NULL;
     $$ = node;
 
     symbol *sym = lookUp(node->name);
@@ -133,8 +130,8 @@ assignment: IDENTITY ASGN expression SC
         printf("Error: Variable %s not declared\n", node->name);
         exit(1);
     }
-    if (sym->type != typeInt) {
-        printf("Error: Variable %s is of type %s, but expression is of type %s\n", node->name, sym->type == typeInt ? "int" : "bool", node->expr->type == typeInt ? "int" : "bool");
+    if (sym->type != factorTypeInt) {
+        printf("Error: Variable %s is of type %s, but READINT requires type int\n", node->name, sym->type);
         exit(1);
     }
 };
@@ -144,7 +141,7 @@ ifStatement: IF expression THEN statementSequence elseClause END SC
     node = malloc(sizeof(ifNode));
     node->expr = $2;
     node->stmtSeq = $4;
-    node->elseClause = $5;
+    node->elseNode = $5;
     $$ = node;
 };
 elseClause: ELSE statementSequence
@@ -269,9 +266,20 @@ int main(argc, argv)
 int argc;
 char** argv;
 {
-    int value = yyparse();
+    extern FILE *yyin;
+    ++argv, --argc;
+    if(argc > 0) {
+        yyin = fopen(argv[0], "r");
 
-    return value;
+        if (yyin == NULL) {
+            printf("Error: File %s not found\n", argv[0]);
+            exit(1);
+        }
+    }
+    else {
+        yyin = stdin;
+    }
+    return yyparse();
 }
 int yywrap()
 {

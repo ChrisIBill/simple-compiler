@@ -1,21 +1,8 @@
 #include <stdio.h>
-#include "uthash.h"
 #include "parser.h"
 
-struct symbol* symbolTable = NULL;
 
-void handleDeclarations(declarationsNode* node);
-void handleStatement(stmtNode* node);
-void handleStatementSeq(stmtSeqNode* node);
-void handleAssignment(assignmentNode* node);
-void handleIf(ifNode* node);
-void handleElse(elseNode* node);
-void handleWhile(whileNode* node);
-void handleWriteInt(writeIntNode* node);
-void handleExpression(exprNode* node);
-void handleSimpExpr(simpExprNode* node);
-void handleTerm(termNode* node);
-void handleFactor(factorNode* node);
+struct symbol* symbolTable = NULL;
 
 void yyerror(char* s) {
     printf("Error: %s\n", s);
@@ -24,12 +11,21 @@ void yyerror(char* s) {
 struct symbol* lookUp(char* s) {
     struct symbol* sym;
     HASH_FIND_STR(symbolTable, s, sym);
+    return sym;
+}
+
+struct symbol* insert(char* s) {
+    struct symbol* sym;
+    HASH_FIND_STR(symbolTable, s, sym);
     if (sym == NULL) {
         sym = (struct symbol*)malloc(sizeof(symbol));
         strcpy(sym->name, s);
         HASH_ADD_KEYPTR(hh, symbolTable, s, strlen(sym->name), sym);
+        return sym;
     }
-    return sym;
+    else {
+        return NULL;
+    }
 }
 
 void handleDeclarations(declarationsNode* node) {

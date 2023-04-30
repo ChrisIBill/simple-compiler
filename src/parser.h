@@ -1,6 +1,6 @@
 #include "uthash.h"
-
 #define MAXCHILDREN 3
+
 
 typedef struct stmtSeqNode stmtSeqNode;
 typedef struct declarationsNode declarationsNode;
@@ -12,9 +12,6 @@ typedef struct symbol
     int isInitialized;
     UT_hash_handle hh;
 } symbol;
-
-struct symbol* lookUp(char* s);
-
 
 /* Enums */
 
@@ -137,3 +134,17 @@ struct programNode
     stmtSeqNode* stmtSeq;
     //NodeType nodeEnum;
 };
+
+struct symbol* lookUp(char* s);
+void handleDeclarations(declarationsNode* node);
+void handleStatement(stmtNode* node);
+void handleStatementSeq(stmtSeqNode* node);
+void handleAssignment(assignmentNode* node);
+void handleIf(ifNode* node);
+void handleElse(elseNode* node);
+void handleWhile(whileNode* node);
+void handleWriteInt(writeIntNode* node);
+void handleExpression(exprNode* node);
+void handleSimpExpr(simpExprNode* node);
+void handleTerm(termNode* node);
+void handleFactor(factorNode* node);
