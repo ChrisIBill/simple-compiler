@@ -4,8 +4,10 @@
 
 struct symbol* symbolTable = (symbol*)NULL;
 
-void yyerror( const char* const s ) {
-    fprintf (stderr, "%s\n", s);
+struct parseTree* root = (parseTree*)NULL;
+
+void yyerror(const char* const s) {
+    fprintf(stderr, "%s\n", s);
 }
 
 struct symbol* lookUp(char* s) {
@@ -23,7 +25,6 @@ struct symbol* insert(char* st) {
     sym = lookUp(st);
     if (sym == NULL) {
         sym = (struct symbol*)malloc(sizeof(symbol));
-        // Bug Here ???
         sym->name = strdup(st);
         HASH_ADD_KEYPTR(hh, symbolTable, st, strlen(sym->name), sym);
         return sym;
@@ -175,6 +176,68 @@ void handleFactor(factorNode* node) {
         break;
     case factorTypeBool:
         printf("Bool: %d ", node->value);
+        break;
+    }
+}
+
+ParseTreeNode createParseTree(NodeType nodeType, ParseTreeNode* node, ParseTreeNode* left, ParseTreeNode* right) {
+    if ()
+        struct parseTree* tree = (struct parseTree*)malloc(sizeof(parseTree));
+    tree->nodeType = nodeType;
+    tree->node = node;
+    tree->left = left;
+    tree->right = createParseTree(NodeType)
+        return tree;
+}
+
+void compileParseTree(ParseTreeNode* node) {
+    if (node == NULL) {
+        /* Null Root */
+        return;
+    }
+    switch (node->nodeType) {
+    case programNodeType:
+        compileParseTree(node->programNode);
+        break;
+    case declarationsNodeType:
+        compileParseTree(node->declarationsNode);
+        break;
+    case stmtSeqNodeType:
+        compileParseTree(node->declarationsNode);
+        compileParseTree(node->declarationsNode2);
+        break;
+    case stmtNodeType:
+        compileParseTree(node->declarationNode);
+        break;
+    case assignmentNodeType:
+        compileParseTree(node->declarationNode);
+        compileParseTree(node->declarationNode2);
+        break;
+    case ifNodeType:
+        compileParseTree(node->typeNode);
+        break;
+    case elseNodeType:
+        compileParseTree(node->statementsNode);
+        break;
+    case whileNodeType:
+        compileParseTree(node->statementsNode);
+        compileParseTree(node->statementsNode2);
+        break;
+    case writeIntNodeType:
+        compileParseTree(node->statementNode);
+        break;
+    case exprNodeType:
+        compileParseTree(node->statementNode);
+        compileParseTree(node->statementNode2);
+        break;
+    case simpExprNodeType:
+        compileParseTree(node->assignmentNode);
+        break;
+    case termNodeType:
+        compileParseTree(node->ifNode);
+        break;
+    case factorNodeType:
+        compileParseTree(node->elseNode);
         break;
     }
 }

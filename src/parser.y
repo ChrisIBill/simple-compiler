@@ -70,53 +70,59 @@ declarations : VAR IDENTITY AS type SC declarations
 }
 | /* empty */ { $$ = (declarationsNode*)NULL; };
 type: INT{ $$ = factorTypeInt; } | BOOL { $$ = factorTypeBool; };
-statementSequence: statement SC statementSequence
+statementSequence: statement statementSequence
 {
     printf("Statement\n");
     stmtSeqNode* node;
     node = malloc(sizeof(stmtSeqNode));
     node->stmt = $1;
-    node->next = $3;
+    node->next = $2;
     $$ = node;
 };
 | /* empty */ { $$ = (stmtSeqNode*)NULL; };
-statement: assignment
+statement: assignment SC
 {
-    stmtNode *node;
+    printf("Assignment\n");
+    stmtNode* node;
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeAssignment;
     node->stmtPtr = (void *) $1;
     $$ = node;
 }
  | ifStatement
- {
-    stmtNode *node;
+{
+    printf("If Statement\n");
+    stmtNode* node;
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeIf;
     node->stmtPtr = (void *) $1;
     $$ = node;
  } | whileStatement
- {
-    stmtNode *node;
+{
+    printf("While Statement\n");
+    stmtNode* node;
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeWhile;
     node->stmtPtr = (void *) $1;
     $$ = node;
  } | writeInt
  {
-    stmtNode *node;
+    printf("WriteInt Statement\n");
+    stmtNode* node;
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeWriteInt;
     node->stmtPtr = (void *) $1;
     $$ = node;
  };
-assignment: IDENTITY ASGN expression SC 
+assignment: IDENTITY ASGN expression
 {
     printf("Identity Assignment\n");
     assignmentNode* node;
     node = malloc(sizeof(assignmentNode));
     node->name = strdup($1);
+    printf("Assignment %s\n", node->name);
     node->expr = $3;
+    printf("Read %s", (char*)$3);
     $$ = node;
 
     symbol *sym = lookUp(node->name);
@@ -125,7 +131,7 @@ assignment: IDENTITY ASGN expression SC
         exit(1);
     }
 }
-| IDENTITY ASGN READINT SC
+| IDENTITY ASGN READINT
 {
     printf("ReadInt Assignment\n");
     assignmentNode* node;
@@ -220,6 +226,7 @@ term: factor
     node = malloc(sizeof(termNode));
     node->factor1 = (void*)$1;
     node->factor2 = (void*)NULL;
+    //Print the factor
     $$ = node;
 }
  | factor OP2 factor
@@ -245,7 +252,6 @@ factor: IDENTITY
     vn->name = $1;
     fn->type = factorTypeInt;
     fn->value = vn;
-    $$ = fn;
 }
 | NUM_LIT 
 {
@@ -257,8 +263,10 @@ factor: IDENTITY
     vn = malloc(sizeof(valueNode));
 
     vn->iValue = $1;
+    printf("Num Factor: %d\n", vn->iValue);
     fn->type = factorTypeInt;
     fn->value = vn;
+    printf("Closing\n");
     $$ = fn;
 }
 | BOOL_LIT 

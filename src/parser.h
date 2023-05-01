@@ -1,6 +1,21 @@
 #include "uthash.h"
 #define MAXCHILDREN 3
 
+typedef enum NodeTypes {
+    programNodeType,
+    declarationsNodeType,
+    stmtSeqNodeType,
+    stmtNodeType,
+    assignmentNodeType,
+    ifNodeType,
+    elseNodeType,
+    whileNodeType,
+    writeIntNodeType,
+    exprNodeType,
+    simpExprNodeType,
+    termNodeType,
+    factorNodeType,
+} NodeType;
 
 typedef struct stmtSeqNode stmtSeqNode;
 typedef struct declarationsNode declarationsNode;
@@ -20,19 +35,7 @@ typedef enum
     factorTypeIdent,
     factorTypeInt,
     factorTypeBool
-} factorNodeType;
-
-typedef enum
-{
-    typeDecl,
-    typeDeclarations
-} declarationsNodeEnum;
-
-typedef enum
-{
-    typeExpr,
-    typeReadInt
-} assignmentNodeEnum;
+} factorTypes;
 
 typedef enum
 {
@@ -40,7 +43,7 @@ typedef enum
     stmtTypeIf,
     stmtTypeWhile,
     stmtTypeWriteInt,
-} stmtNodeTypes;
+} stmtTypes;
 
 typedef enum
 {
@@ -55,7 +58,7 @@ typedef union valueNode {
 
 typedef struct
 {
-    factorNodeType type;
+    factorTypes type;
     valueNode* value;
 } factorNode;
 
@@ -111,7 +114,7 @@ typedef struct
 
 typedef struct
 {
-    stmtNodeTypes type;
+    stmtTypes type;
     void* stmtPtr;
 } stmtNode;
 
@@ -124,7 +127,7 @@ struct stmtSeqNode
 struct declarationsNode
 {
     char* name;
-    factorNodeType type;
+    factorTypes type;
     declarationsNode* next;
 };
 
@@ -149,3 +152,33 @@ void handleExpression(exprNode* node);
 void handleSimpExpr(simpExprNode* node);
 void handleTerm(termNode* node);
 void handleFactor(factorNode* node);
+
+typedef union parseTreeNodeType
+{
+    programNode* program;
+    declarationsNode* declarations;
+    stmtSeqNode* stmtSeq;
+    stmtNode* stmt;
+    assignmentNode* assignment;
+    ifNode* ifNode;
+    elseNode* elseNode;
+    whileNode* whileNode;
+    writeIntNode* writeInt;
+    exprNode* expression;
+    simpExprNode* simpleExpression;
+    termNode* term;
+    factorNode* factor;
+} parseTreeNodeType;
+
+typedef struct ParseTreeNode
+{
+    NodeType nodeType;
+    parseTreeNode* nodeData;
+    int numChildren;
+    struct parseTreeNode* left;
+    struct parseTreeNode* right;
+} ParseTreeNode;
+
+int createParseTreeNode()
+int createParseTree(NodeType nodeType, ParseTreeNode* node, ParseTreeNode* left, ParseTreeNode* right);
+void compileParseTree(ParseTreeNode* tree);
