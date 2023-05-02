@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include "uthash.h"
-#define YYDEBUG 0
+#define YYDEBUG 2
 #ifdef YYDEBUG
-#define printd(level, x) (level <= YYDEBUG) ? 0 : printf(x)
+#define printd(level, x) (level <= YYDEBUG) ? 0 : printf(x, level, YYDEBUG)
 #else
 #define printd(level, x)
 #endif
 #define MAXCHILDREN 3
 
 enum LOG_LEVEL {
-    LOG_DEBUG,
-    LOG_INFO,
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
     LOG_WARN,
     LOG_ERROR,
     LOG_FATAL

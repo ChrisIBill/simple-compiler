@@ -3,8 +3,10 @@
 struct symbol* symbolTable = (symbol*)NULL;
 
 struct symbol* lookUp(char* s) {
+    printd(LOG_INFO, "INFO: Looking up symbol\n");
     struct symbol* sym;
     if (symbolTable == NULL) {
+        printd(LOG_INFO, "INFO: Symbol table is empty\n");
         return NULL;
     }
     HASH_FIND_STR(symbolTable, s, sym);
@@ -26,6 +28,7 @@ struct symbol* insert(char* st) {
 }
 
 int handleDeclaration(declarationNode* node, FILE* out) {
+    printd(LOG_INFO, "INFO: Handling declaration\n");
     switch (node->type) {
     case factorTypeInt:
         fprintf(out, "int %s", node->name);
@@ -42,6 +45,7 @@ int handleDeclaration(declarationNode* node, FILE* out) {
 }
 
 void handleStatement(stmtNode* node, FILE* out) {
+    printd(LOG_INFO, "INFO: Handling statement\n");
     switch (node->type) {
     case stmtTypeAssignment:
         handleAssignment(node->stmtPtr, out);
@@ -104,9 +108,7 @@ void handleExpression(exprNode* node, FILE* out) {
         }
     }
     else {
-        //handleSimpExpr(node->simpExpr1, out);
         fprintf(out, " %s ", node->op);
-        //handleSimpExpr(node->simpExpr2, out);
         /* @TODO: If expression evals to false in code, compiler could drop some statements? */
         /* if (strcmp(node->op, "<") == 0) {
             return left < right;
@@ -130,34 +132,28 @@ void handleExpression(exprNode* node, FILE* out) {
 }
 
 void handleSimpExpr(simpExprNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling simpExpr\n");
+    printd(LOG_INFO, "INFO: Handling simpExpr\n");
     if (node->term2 == NULL) {
-        // handleTerm(node->term1, out);
         if (node->op != NULL) {
             printd(LOG_ERROR, "ERROR: Invalid expression\n");
             fprintf(out, " %s ", node->op);
         }
     }
     else {
-        // handleTerm(node->term1, out);
         fprintf(out, " %s ", node->op);
-        // handleTerm(node->term2, out);
     }
 }
 
 void handleTerm(termNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling term\n");
+    printd(LOG_INFO, "INFO: Handling term\n");
     if (node->factor2 == NULL) {
-        // handleFactor(node->factor1, out);
         if (node->op != NULL) {
             printd(LOG_ERROR, "ERROR: Invalid expression\n");
             fprintf(out, " %s ", node->op);
         }
     }
     else {
-        // handleFactor(node->factor1, out);
         fprintf(out, " %s ", node->op);
-        // handleFactor(node->factor2, out);
     }
 }
 
@@ -214,7 +210,6 @@ int compileParseTree(ParseTreeNode* node, FILE* output) {
         compileParseTree(node->left, output);
         break;
     case stmtSeqNodeType:
-        printf("Handling statement sequence\n");
         compileParseTree(node->left, output);
         compileParseTree(node->right, output);
         break;
