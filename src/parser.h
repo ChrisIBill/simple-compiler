@@ -1,12 +1,29 @@
+#include <stdio.h>
 #include "uthash.h"
+#define YYDEBUG 0
+#ifdef YYDEBUG
+#define printd(level, x) (level <= YYDEBUG) ? 0 : printf(x)
+#else
+#define printd(level, x)
+#endif
 #define MAXCHILDREN 3
 
-typedef enum NodeTypes {
+enum LOG_LEVEL {
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_WARN,
+    LOG_ERROR,
+    LOG_FATAL
+};
+
+
+typedef enum NodeType {
     programNodeType,
-    declarationsNodeType,
+    declarationNodeType,
     stmtSeqNodeType,
     stmtNodeType,
     assignmentNodeType,
+    ifElseNodeType,
     ifNodeType,
     elseNodeType,
     whileNodeType,
@@ -17,13 +34,26 @@ typedef enum NodeTypes {
     factorNodeType,
 } NodeType;
 
+typedef enum NodeLeafTypes {
+    identLeafType,
+    intLeafType,
+    boolLeafType,
+} NodeLeafTypes;
+
+/* typedef enum NodeType {
+    branch,
+    leaf,
+} NodeType; */
+typedef struct programNode programNode;
 typedef struct stmtSeqNode stmtSeqNode;
-typedef struct declarationsNode declarationsNode;
+typedef struct declarationNode declarationNode;
+typedef struct ParseTreeNode ParseTreeNode;
+
 typedef struct symbol
 {
     char* name;
     int type;
-    int value;
+    void* value;
     int isInitialized;
     UT_hash_handle hh;
 } symbol;
@@ -48,7 +78,7 @@ typedef enum
 typedef enum
 {
     typeStmt,
-    typeStmtSeq
+    typeStmtSeq,
 } stmtSeqNodeEnum;
 /* Structs */
 typedef union valueNode {
@@ -103,9 +133,13 @@ typedef struct
 {
     exprNode* expr;
     stmtSeqNode* stmtSeq;
-    elseNode* elseNode;
 } ifNode;
 
+typedef struct
+{
+    ifNode* ifNode;
+    elseNode* elseNode;
+} ifElseNode;
 typedef struct
 {
     char* name;
@@ -118,48 +152,50 @@ typedef struct
     void* stmtPtr;
 } stmtNode;
 
-struct stmtSeqNode
+typedef struct stmtSeqNode
 {
-    stmtNode* stmt;
-    stmtSeqNode* next;
-};
+    void* stmtSeq;
+} stmtSeqNode;
 
-struct declarationsNode
+struct declarationNode
 {
     char* name;
     factorTypes type;
-    declarationsNode* next;
 };
 
 struct programNode
 {
-    declarationsNode* declarations;
+    declarationNode* declarations;
     stmtSeqNode* stmtSeq;
-    //NodeType nodeEnum;
 };
 
 struct symbol* lookUp(char* s);
 struct symbol* insert(char* st);
-void handleDeclarations(declarationsNode* node);
-void handleStatement(stmtNode* node);
-void handleStatementSeq(stmtSeqNode* node);
-void handleAssignment(assignmentNode* node);
-void handleIf(ifNode* node);
-void handleElse(elseNode* node);
-void handleWhile(whileNode* node);
-void handleWriteInt(writeIntNode* node);
-void handleExpression(exprNode* node);
-void handleSimpExpr(simpExprNode* node);
-void handleTerm(termNode* node);
-void handleFactor(factorNode* node);
+int handleDeclarations(declarationNode* node, FILE* out);
+void handleStatement(stmtNode* node, FILE* out);
+void handleStatementSeq(stmtSeqNode* node, FILE* out);
+void handleAssignment(assignmentNode* node, FILE* out);
+void handleIf(ifNode* node, FILE* out);
+void handleElse(elseNode* node, FILE* out);
+void handleWhile(whileNode* node, FILE* out);
+void handleWriteInt(writeIntNode* node, FILE* out);
+void handleExpression(exprNode* node, FILE* out);
+void handleSimpExpr(simpExprNode* node, FILE* out);
+void handleTerm(termNode* node, FILE* out);
+void handleFactor(factorNode* node, FILE* out);
 
-typedef union parseTreeNodeType
+typedef union ParseTreeTokenTypes {
+    char* name;
+    int iValue;
+} ParseTreeTokenTypes;
+
+typedef union ParseTreeNodeTypes
 {
-    programNode* program;
-    declarationsNode* declarations;
-    stmtSeqNode* stmtSeq;
+    void* program;
+    declarationNode* declarations;
     stmtNode* stmt;
     assignmentNode* assignment;
+    ifElseNode* ifElse;
     ifNode* ifNode;
     elseNode* elseNode;
     whileNode* whileNode;
@@ -168,17 +204,16 @@ typedef union parseTreeNodeType
     simpExprNode* simpleExpression;
     termNode* term;
     factorNode* factor;
-} parseTreeNodeType;
+} ParseTreeNodeTypes;
 
 typedef struct ParseTreeNode
 {
     NodeType nodeType;
-    parseTreeNode* nodeData;
-    int numChildren;
-    struct parseTreeNode* left;
-    struct parseTreeNode* right;
+    ParseTreeNodeTypes* data;
+    ParseTreeNode* left;
+    ParseTreeNode* right;
 } ParseTreeNode;
 
-int createParseTreeNode()
-int createParseTree(NodeType nodeType, ParseTreeNode* node, ParseTreeNode* left, ParseTreeNode* right);
-void compileParseTree(ParseTreeNode* tree);
+struct ParseTreeNode* createParseTreeNode(NodeType nodeType, ParseTreeNodeTypes* node, ParseTreeNode* left, ParseTreeNode* right);
+//int createParseTree(NodeType nodeType, ParseTreeNode* node, ParseTreeNode* left, ParseTreeNode* right);
+int compileParseTree(ParseTreeNode* tree, FILE* output);

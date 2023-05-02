@@ -1,18 +1,24 @@
 %error-verbose
 %{
-#include <stdio.h>
 #include <string.h>
 #include "parser.h"
 #define YYDEBUG 1
+/* DEBUG */
+
 extern int yylex();
 
 int numDeclarations = 0;
+
+struct ParseTreeNode* ROOT = (ParseTreeNode*)NULL;
+FILE* outFile;
 %}
+
+%locations
 
 %union {
     int iValue;
     char* sValue;
-    void* node;
+    ParseTreeNode* node;
 }
 
 %start program
@@ -25,6 +31,7 @@ int numDeclarations = 0;
 %token <sValue> OP4
 %token IF THEN ELSE BEGN END WHILE DO PROGRAM VAR AS INT BOOL
 %token WRITEINT READINT
+%token UNKNOWN
 
 %type<node> program
 %type<node> declarations
@@ -32,6 +39,7 @@ int numDeclarations = 0;
 %type<node> statementSequence
 %type<node> statement
 %type<node> assignment
+%type<node> ifElseStatement
 %type<node> ifStatement
 %type<node> whileStatement
 %type<node> writeInt
@@ -45,21 +53,19 @@ int numDeclarations = 0;
 program : PROGRAM declarations BEGN statementSequence END
 {
     printf("Program Valid\n");
-    handleDeclarations((declarationsNode*)$2);
-    handleStatementSeq((stmtSeqNode *) $4);
     printf("finished\n");
+    ROOT = createParseTreeNode(programNodeType, NULL, $2, $4);
 }
 ;
 declarations : VAR IDENTITY AS type SC declarations
 {
     printf("Declaration %s\n", $2);
     numDeclarations++;
-    declarationsNode* node;
-    node = malloc(sizeof(declarationsNode));
+    declarationNode* node;
+    node = malloc(sizeof(declarationNode));
     node->name = strdup($2);
     node->type = $4;
-    node->next = $6;
-    $$ = node;
+    $$ = createParseTreeNode(declarationNodeType, node, (declarationNode *)$6, NULL);
     symbol* sym = lookUp(node->name);
     if (sym != NULL) {
         printf("Error: Variable %s already declared\n", node->name);
@@ -68,35 +74,37 @@ declarations : VAR IDENTITY AS type SC declarations
     sym = insert(node->name);
     sym->type = node->type;
 }
-| /* empty */ { $$ = (declarationsNode*)NULL; };
+| /* empty */ { $$ = (declarationNode*)NULL; };
 type: INT{ $$ = factorTypeInt; } | BOOL { $$ = factorTypeBool; };
-statementSequence: statement statementSequence
+statementSequence: statement SC statementSequence
 {
     printf("Statement\n");
     stmtSeqNode* node;
     node = malloc(sizeof(stmtSeqNode));
-    node->stmt = $1;
-    node->next = $2;
-    $$ = node;
+    /* Left child is statement, right child is sequence or Null */
+    $$ = createParseTreeNode(stmtSeqNodeType, node, (stmtNode *) $1, (stmtSeqNode *)$3);
 };
 | /* empty */ { $$ = (stmtSeqNode*)NULL; };
-statement: assignment SC
+statement: assignment
 {
     printf("Assignment\n");
     stmtNode* node;
     node = malloc(sizeof(stmtNode));
+    printf("here\n");
     node->type = stmtTypeAssignment;
-    node->stmtPtr = (void *) $1;
-    $$ = node;
+    printf("here\n");
+    node->stmtPtr = (void*)$1;
+    printf("here\n");
+    $$ = createParseTreeNode(stmtNodeType, node, $1, NULL);
 }
- | ifStatement
+ | ifElseStatement
 {
     printf("If Statement\n");
     stmtNode* node;
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeIf;
     node->stmtPtr = (void *) $1;
-    $$ = node;
+    $$ = createParseTreeNode(stmtNodeType, node, $1, NULL);
  } | whileStatement
 {
     printf("While Statement\n");
@@ -104,7 +112,7 @@ statement: assignment SC
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeWhile;
     node->stmtPtr = (void *) $1;
-    $$ = node;
+    $$ = createParseTreeNode(stmtNodeType, node, $1, NULL);
  } | writeInt
  {
     printf("WriteInt Statement\n");
@@ -112,7 +120,7 @@ statement: assignment SC
     node = malloc(sizeof(stmtNode));
     node->type = stmtTypeWriteInt;
     node->stmtPtr = (void *) $1;
-    $$ = node;
+    $$ = createParseTreeNode(stmtNodeType, node, $1, NULL);
  };
 assignment: IDENTITY ASGN expression
 {
@@ -123,13 +131,16 @@ assignment: IDENTITY ASGN expression
     printf("Assignment %s\n", node->name);
     node->expr = $3;
     printf("Read %s", (char*)$3);
-    $$ = node;
 
     symbol *sym = lookUp(node->name);
     if (sym == NULL) {
         printf("Error: Variable %s not declared\n", node->name);
         exit(1);
     }
+    /* @TODO type checking expression? */
+    sym->isInitialized = 1;
+    $$ = createParseTreeNode(assignmentNodeType, node, $3, NULL);
+    /* @TODO value assignment, maybe we can check for constants? */
 }
 | IDENTITY ASGN READINT
 {
@@ -138,7 +149,6 @@ assignment: IDENTITY ASGN expression
     node = malloc(sizeof(assignmentNode));
     node->name = strdup($1);
     node->expr = NULL;
-    $$ = node;
 
     symbol *sym = lookUp(node->name);
     if (sym == NULL) {
@@ -149,38 +159,48 @@ assignment: IDENTITY ASGN expression
         printf("Error: Variable %s is of type %s, but READINT requires type int\n", node->name, sym->type);
         exit(1);
     }
+    $$ = createParseTreeNode(assignmentNodeType, node, NULL, NULL);
 };
-ifStatement: IF expression THEN statementSequence elseClause END SC
+ifElseStatement: IF ifStatement elseClause END SC
+{
+    ifElseNode *node;
+    node = malloc(sizeof(ifNode));
+    node->ifNode = $2;
+    node->elseNode = $3;
+    /* @TODO assign null node */
+    $$ = createParseTreeNode(ifElseNodeType, node, $2, $3);
+};
+ifStatement: expression THEN statementSequence
 {
     ifNode *node;
     node = malloc(sizeof(ifNode));
-    node->expr = $2;
-    node->stmtSeq = $4;
-    node->elseNode = $5;
-    $$ = node;
+    node->expr = $1;
+    node->stmtSeq = $3;
+    $$ = createParseTreeNode(ifNodeType, node, $1, $3);
 };
 elseClause: ELSE statementSequence
 {
     elseNode *node;
     node = malloc(sizeof(elseNode));
     node->stmtSeq = $2;
-    $$ = node;
+    $$ = createParseTreeNode(elseNodeType, node, $2, NULL);
 }
 | /* empty */ { $$ = (elseNode*)NULL; };
-whileStatement: WHILE expression DO statementSequence END SC
+whileStatement: WHILE expression DO statementSequence END
 {
     whileNode *node;
     node = malloc(sizeof(whileNode));
     node->expr = $2;
     node->stmtSeq = $4;
-    $$ = node;
+    $$ = createParseTreeNode(whileNodeType, node, $2, $4);
 };
-writeInt: WRITEINT expression SC
+writeInt: WRITEINT expression
 {
-    writeIntNode *node;
+    printf("WriteInt\n");
+    writeIntNode* node;
     node = malloc(sizeof(writeIntNode));
     node->expr = $2;
-    $$ = node;
+    $$ = createParseTreeNode(writeIntNodeType, node, $2, NULL);
 };
 expression: simpleExpression 
 {
@@ -188,7 +208,7 @@ expression: simpleExpression
     exprNode* node;
     node = malloc(sizeof(exprNode));
     node->simpExpr1 = (void *) $1;
-    $$ = node;
+    $$ = createParseTreeNode(exprNodeType, node, $1, NULL);
 }
 | simpleExpression OP4 simpleExpression
 {
@@ -198,7 +218,7 @@ expression: simpleExpression
     node->simpExpr1 = (void *) $1;
     node->op = $2;
     node->simpExpr2 = (void *) $3;
-    $$ = node;
+    $$ = createParseTreeNode(exprNodeType, node, $1, $3);
 };
 simpleExpression: term 
 {
@@ -207,7 +227,7 @@ simpleExpression: term
     node = malloc(sizeof(exprNode));
     node->term1 = (void *) $1;
     node->term2 = (void *) NULL;
-    $$ = node;
+    $$ = createParseTreeNode(simpExprNodeType, node, $1, NULL);
 }
 | term OP3 term
 {
@@ -217,7 +237,7 @@ simpleExpression: term
     node->term1 = (void *) $1;
     node->op = $2;
     node->term2 = (void *) $3;
-    $$ = node;
+    $$ = createParseTreeNode(simpExprNodeType, node, $1, $3);
 };
 term: factor
 {
@@ -227,7 +247,7 @@ term: factor
     node->factor1 = (void*)$1;
     node->factor2 = (void*)NULL;
     //Print the factor
-    $$ = node;
+    $$ = createParseTreeNode(termNodeType, node, $1, NULL);
 }
  | factor OP2 factor
 {
@@ -237,9 +257,9 @@ term: factor
     node->factor1 = (void *) $1;
     node->op = $2;
     node->factor2 = (void *) $3;
-    $$ = node;
- };
-factor: IDENTITY 
+    $$ = createParseTreeNode(termNodeType, node, $1, $3);
+};
+factor: IDENTITY
 {
     printf("Identity Factor\n");
     /* @TODO */
@@ -250,8 +270,10 @@ factor: IDENTITY
     vn = malloc(sizeof(valueNode));
     
     vn->name = $1;
-    fn->type = factorTypeInt;
+    fn->type = factorTypeIdent;
     fn->value = vn;
+
+    $$ = createParseTreeNode(factorNodeType, fn, NULL, NULL);
 }
 | NUM_LIT 
 {
@@ -266,8 +288,7 @@ factor: IDENTITY
     printf("Num Factor: %d\n", vn->iValue);
     fn->type = factorTypeInt;
     fn->value = vn;
-    printf("Closing\n");
-    $$ = fn;
+    $$ = createParseTreeNode(factorNodeType, fn, NULL, NULL);
 }
 | BOOL_LIT 
 {
@@ -281,8 +302,9 @@ factor: IDENTITY
     vn->iValue = $1;
     fn->type = factorTypeBool;
     fn->value = vn;
-    $$ = fn;
+    $$ = createParseTreeNode(factorNodeType, fn, NULL, NULL);
 }
+| error { yyerrok; yyerror("Error: Invalid Factor"); }
 ;
 
 %%
@@ -292,20 +314,33 @@ int main(argc, argv)
 int argc;
 char** argv;
 {
-    extern FILE *yyin;
+    printd(LOG_DEBUG, "DEBUG LOGGING ON\n");
+    printd(LOG_INFO, "INFO LOGGING ON\n");
+    printd(LOG_WARN, "WARN LOGGING ON\n");
+    printd(LOG_ERROR, "ERROR LOGGING ON\n");
+    printd(LOG_FATAL, "FATAL LOGGING ON\n");
+    extern FILE* yyin;
     ++argv, --argc;
     if(argc > 0) {
         yyin = fopen(argv[0], "r");
 
         if (yyin == NULL) {
-            printf("Error: File %s not found\n", argv[0]);
+            printd(LOG_FATAL, "FATAL ERROR: File %s not found\n");
             exit(1);
         }
     }
     else {
         yyin = stdin;
     }
-    return yyparse();
+    int ret = yyparse();
+    if (ret == 0) {
+        printd(LOG_INFO, "Parse Successful\n");
+        outFile = fopen("output.c", "w");
+        compileParseTree(ROOT, outFile);
+    }
+    else {
+        printd(LOG_INFO, "Parse Failed\n");
+    }
 }
 int yywrap()
 {
