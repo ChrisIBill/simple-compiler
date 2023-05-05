@@ -1,20 +1,15 @@
-program
-   var N1 as list ; 
-   var N2 as int ; 
-   var NEXT as int ; 
-   var MAX as int ; 
+program 
+   var N as int ; 
+   var I as int ; 
 begin 
-   MAX := readInt ; 
+   N := readInt ; 
 
-   N1 := 0 ; 
-   N2 := $ ; 
-
-   writeInt N1 ; 
-
-   while N2 < MAX do 
-      writeInt N2 ; 
-      NEXT := N1 + N2 ; 
-      N1 := N4 ; 
-      N2 := NEXT ; 
+   I := 2 ; 
+   while I <= N do 
+      while N mod I = 0 do 
+         N := N div I ; 
+         writeInt I ; 
+      end ; 
+      I := I + 1 ; 
    end ; 
 end 

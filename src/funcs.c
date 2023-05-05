@@ -3,10 +3,10 @@
 struct symbol* symbolTable = (symbol*)NULL;
 
 struct symbol* lookUp(char* s) {
-    printd(LOG_INFO, "INFO: Looking up symbol\n");
+    printd(LOG_DATA, "INFO: Looking up symbol\n");
     struct symbol* sym;
     if (symbolTable == NULL) {
-        printd(LOG_INFO, "INFO: Symbol table is empty\n");
+        printd(LOG_DATA, "INFO: Symbol table is empty\n");
         return NULL;
     }
     HASH_FIND_STR(symbolTable, s, sym);
@@ -28,7 +28,7 @@ struct symbol* insert(char* st) {
 }
 
 int handleDeclaration(declarationNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling declaration\n");
+    printd(LOG_DATA, "INFO: Handling declaration\n");
     switch (node->type) {
     case factorTypeInt:
         fprintf(out, "int %s", node->name);
@@ -45,7 +45,7 @@ int handleDeclaration(declarationNode* node, FILE* out) {
 }
 
 void handleStatement(stmtNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling statement\n");
+    printd(LOG_DATA, "INFO: Handling statement\n");
     switch (node->type) {
     case stmtTypeAssignment:
         handleAssignment(node->stmtPtr, out);
@@ -63,7 +63,7 @@ void handleStatement(stmtNode* node, FILE* out) {
 }
 
 void handleAssignment(assignmentNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling assignment\n");
+    printd(LOG_DATA, "INFO: Handling assignment\n");
     struct symbol* symbol = lookUp(node->name);
     if (symbol == NULL) {
         printd(LOG_ERROR, "ERROR: Symbol not found");
@@ -77,30 +77,30 @@ void handleAssignment(assignmentNode* node, FILE* out) {
 }
 
 void handleIf(ifNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling if\n");
+    printd(LOG_DATA, "INFO: Handling if\n");
     fprintf(out, "if (");
     //handleExpression(node->expr, out);
     //handleStatementSeq(node->stmtSeq, out);
 }
 
 void handleElse(elseNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling else\n");
+    printd(LOG_DATA, "Handling else\n");
     fprintf(out, "else {");
     //handleStatementSeq(node->stmtSeq, out);
 }
 
 void handleWhile(whileNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling while\n");
+    printd(LOG_DATA, "Handling while\n");
     fprintf(out, "while (");
 }
 
 void handleWriteInt(writeIntNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling writeInt\n");
+    printd(LOG_DATA, "Handling writeInt\n");
     fprintf(out, "printf(\"%%i\\n\", ");
 }
 
 void handleExpression(exprNode* node, FILE* out) {
-    printd(LOG_INFO, "Handling expression\n");
+    printd(LOG_DATA, "Handling expression\n");
     if (node->simpExpr2 == NULL) {
         if (node->op != NULL) {
             printd(LOG_ERROR, "ERROR: Invalid expression\n");
@@ -108,7 +108,10 @@ void handleExpression(exprNode* node, FILE* out) {
         }
     }
     else {
-        fprintf(out, " %s ", node->op);
+        if (strcmp(node->op, "=") == 0) {
+            fprintf(out, " == ", node->op);
+        }
+        else fprintf(out, " %s ", node->op);
         /* @TODO: If expression evals to false in code, compiler could drop some statements? */
         /* if (strcmp(node->op, "<") == 0) {
             return left < right;
@@ -132,7 +135,7 @@ void handleExpression(exprNode* node, FILE* out) {
 }
 
 void handleSimpExpr(simpExprNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling simpExpr\n");
+    printd(LOG_DATA, "INFO: Handling simpExpr\n");
     if (node->term2 == NULL) {
         if (node->op != NULL) {
             printd(LOG_ERROR, "ERROR: Invalid expression\n");
@@ -145,32 +148,36 @@ void handleSimpExpr(simpExprNode* node, FILE* out) {
 }
 
 void handleTerm(termNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling term\n");
+    printd(LOG_DATA, "INFO: Handling term\n");
     if (node->factor2 == NULL) {
         if (node->op != NULL) {
             printd(LOG_ERROR, "ERROR: Invalid expression\n");
             fprintf(out, " %s ", node->op);
         }
     }
-    else {
-        fprintf(out, " %s ", node->op);
+    else if (strcmp("div", node->op) == 0) {
+        fprintf(out, " / ");
     }
+    else if (strcmp("mod", node->op) == 0) {
+        fprintf(out, " %% ");
+    }
+    else fprintf(out, " %s ", node->op);
 }
 
 void handleFactor(factorNode* node, FILE* out) {
-    printd(LOG_INFO, "INFO: Handling factor\n");
+    printd(LOG_DATA, "INFO: Handling factor\n");
     //printf(" %d ", node->type);
     switch (node->type) {
     case factorTypeIdent:
-        printd(LOG_INFO, "INFO: Identifier \n");
+        printd(LOG_DATA, "INFO: Identifier \n");
         fprintf(out, " %s ", node->value->name);
         break;
     case factorTypeInt:
-        printd(LOG_INFO, "INFO: Int \n");
+        printd(LOG_DATA, "INFO: Int \n");
         fprintf(out, " %d ", node->value->iValue);
         break;
     case factorTypeBool:
-        printd(LOG_INFO, "INFO: Bool \n");
+        printd(LOG_DATA, "INFO: Bool \n");
         fprintf(out, " %d ", node->value->iValue);
         break;
     }
