@@ -150,7 +150,7 @@ assignment: IDENTITY ASGN expression
     node->name = strdup($1);
     node->expr = NULL;
 
-    symbol *sym = lookUp(node->name);
+    symbol* sym = lookUp(node->name);
     if (sym == NULL) {
         printf("Error: Variable %s not declared\n", node->name);
         yyerror("Error: Variable not declared\n");
@@ -159,7 +159,10 @@ assignment: IDENTITY ASGN expression
         printf("Error: Variable %s is of type %s, but READINT requires type int\n", node->name, sym->type);
         yyerror("Error: Variable not of type int\n");
     }
-    else $$ = createParseTreeNode(assignmentNodeType, node, NULL, NULL);
+    else {
+        sym->isInitialized = 1;
+        $$ = createParseTreeNode(assignmentNodeType, node, NULL, NULL);
+    }
 }
 ;
 ifElseStatement: IF ifStatement elseClause END SC
@@ -286,6 +289,9 @@ factor: IDENTITY
     else if (sym->type != factorTypeInt) {
         printf("Error: Variable %s is of type %s, but READINT requires type int\n", vn->name, sym->type);
         yyerror("Error: Variable not of type int\n");
+    }
+    else if (sym->isInitialized == 0) {
+        yyerror("Error: Variable not initialized");
     }
     else $$ = createParseTreeNode(factorNodeType, fn, NULL, NULL);
 }

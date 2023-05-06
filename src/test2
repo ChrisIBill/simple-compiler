@@ -1,0 +1,8 @@
+program
+	var X as int ;
+	var Y as int ;
+begin
+     ;
+	Y := 5 - X ;
+	writeInt X - Y ;
+end
