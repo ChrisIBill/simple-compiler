@@ -1,0 +1,5 @@
+Demo Compiler for TS-13 Programming Language for CS4386 at UTD
+Compiles from TS-13 to C.
+To Build the compiler just run make
+The compiler can be run in both the terminal or on an output file.
+To run "./compiler <Optional File Path>"
