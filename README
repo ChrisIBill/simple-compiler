@@ -1,5 +1,16 @@
+## Simple Compiler
 Demo Compiler for TS-13 Programming Language for CS4386 at UTD
 Compiles from TS-13 to C.
+
+## Installation and Setup Instructions
+
+Clone this repository. You will need `make`, `bison`, `flex`, and `gcc` installed on your machine.
+
+## Build Instructions
+
 To Build the compiler just run make
+
+## Running Instructions
+
 The compiler can be run in both the terminal or on an output file.
 To run "./compiler <Optional File Path>"
